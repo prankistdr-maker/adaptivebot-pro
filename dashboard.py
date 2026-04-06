@@ -18,7 +18,7 @@ CLAUDE_API_KEY=os.getenv("CLAUDE_API_KEY","")
 DELTA_BASE="https://cdn-ind.testnet.deltaex.org"
 
 PAIRS={"BTCUSDT":{"product_id":27},"ETHUSDT":{"product_id":3},"SOLUSDT":{"product_id":185}}
-STARTING_BALANCE=830;MAX_RISK_PCT=0.04;MIN_CONFIDENCE=7;TRADE_COOLDOWN=300;SCAN_INTERVAL=60
+STARTING_BALANCE=830;MAX_RISK_PCT=0.04;MIN_CONFIDENCE=7;TRADE_COOLDOWN=300;SCAN_INTERVAL=120
 
 # ─── STATE ─────────────────────────────────────────────────
 class BotState:
@@ -97,18 +97,18 @@ def fetch_price_any(pair):
             log.warning(f"{name} failed for {pair}: {str(e)[:60]}")
     log.error(f"ALL price sources failed for {pair}")
     return {"price":0,"chg":0}
-
 def fetch_all_prices():
+    
     result={}
     for pair in PAIRS:
         d=fetch_price_any(pair)
         if d["price"]>0:
             result[pair]=d
             state.last_price[pair]=d["price"]
+        time.sleep(2)  # 2 second delay between each pair
     if result:
         with state.lock:state.prices_ext=result
     return result
-
 # ─── CANDLE FETCHER WITH FALLBACKS ─────────────────────────
 def fetch_candles_coingecko(pair,days="1"):
     ids={"BTCUSDT":"bitcoin","ETHUSDT":"ethereum","SOLUSDT":"solana"}
