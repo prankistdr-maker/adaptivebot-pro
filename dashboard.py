@@ -459,11 +459,16 @@ def api_trades():
 
 @app.route("/api/prices")
 def api_prices():
-    with state.lock:ext=dict(state.prices_ext)
+    # Always fetch fresh prices directly — don't rely on thread state
     result={}
-    for pair in PAIRS:
-        price=state.last_price.get(pair,0);chg=ext.get(pair,{}).get("chg",0)
-        if price>0:result[pair]={"price":price,"chg":chg,"tf":state.api_source}
+    try:
+        prices=fetch_all_prices()
+        for pair,d in prices.items():
+            result[pair]={"price":d["price"],"chg":d["chg"],"tf":state.api_source}
+    except:
+        for pair in PAIRS:
+            price=state.last_price.get(pair,0)
+            if price>0:result[pair]={"price":price,"chg":0,"tf":state.api_source}
     return jsonify(result)
 
 @app.route("/api/log")
@@ -635,7 +640,7 @@ async function refresh(){
     document.getElementById('lb').textContent=(l.lines||[]).slice(-15).join('\n');
   }catch(e){console.error(e);}
 }
-refresh();setInterval(refresh,8000);
+refresh();setInterval(refresh,15000);
 </script></body></html>"""
 
 if __name__=="__main__":
