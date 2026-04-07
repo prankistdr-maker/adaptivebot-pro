@@ -456,20 +456,20 @@ def api_status():
 def api_trades():
     try:return jsonify(json.load(open("trades.json")) if os.path.exists("trades.json") else [])
     except:return jsonify(state.trades)
-
+        
 @app.route("/api/prices")
 def api_prices():
-    # Always fetch fresh prices directly — don't rely on thread state
+    # Read directly from shared state — bot thread keeps this updated
     result={}
-    try:
-        prices=fetch_all_prices()
-        for pair,d in prices.items():
-            result[pair]={"price":d["price"],"chg":d["chg"],"tf":state.api_source}
-    except:
-        for pair in PAIRS:
-            price=state.last_price.get(pair,0)
-            if price>0:result[pair]={"price":price,"chg":0,"tf":state.api_source}
+    with state.lock:
+        ext=dict(state.prices_ext)
+    for pair in PAIRS:
+        price=state.last_price.get(pair,0)
+        chg=ext.get(pair,{}).get("chg",0)
+        if price>0:
+            result[pair]={"price":price,"chg":chg,"tf":state.api_source}
     return jsonify(result)
+
 
 @app.route("/api/log")
 def api_log():
