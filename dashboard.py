@@ -568,12 +568,25 @@ const chart=new Chart(ctx,{type:'line',data:{labels:pl2,datasets:[{data:pd,borde
     scales:{x:{display:false},y:{grid:{color:'rgba(56,189,248,0.04)'},ticks:{color:'#475569',font:{family:'JetBrains Mono',size:9},callback:v=>'₹'+v.toFixed(0)}}}}});
 async function refresh(){
   try{
-    const[s,t,l,p]=await Promise.all([
+ const[s,t,l]=await Promise.all([
       fetch('/api/status').then(r=>r.json()).catch(()=>({})),
       fetch('/api/trades').then(r=>r.json()).catch(()=>[]),
-      fetch('/api/log').then(r=>r.json()).catch(()=>({lines:[]})),
-      fetch('/api/prices').then(r=>r.json()).catch(()=>({}))
+      fetch('/api/log').then(r=>r.json()).catch(()=>({lines:[]}))
     ]);
+
+// Fetch prices DIRECTLY from Kraken in browser - instant, no server
+const p={};
+try{
+  const pairs=[['BTCUSDT','XBTUSD'],['ETHUSDT','ETHUSD'],['SOLUSDT','SOLUSD']];
+  for(const[pair,kpair] of pairs){
+    try{
+      const r=await fetch(`https://api.kraken.com/0/public/Ticker?pair=${kpair}`);
+      const d=await r.json();
+      const key=Object.keys(d.result)[0];
+      p[pair]={price:parseFloat(d.result[key].c[0]),chg:0,tf:'Kraken'};
+    }catch(e){}
+  }
+}catch(e){}
     document.getElementById('ts').textContent='Updated: '+new Date().toLocaleTimeString('en-IN');
     document.getElementById('ai').textContent=s.claude?'CLAUDE AI':'RULE-BASED';
     document.getElementById('ss').textContent=s.running?'scanning markets':'stopped';
