@@ -459,7 +459,6 @@ def api_trades():
         
 @app.route("/api/prices")
 def api_prices():
-    # Read directly from shared state — bot thread keeps this updated
     result={}
     with state.lock:
         ext=dict(state.prices_ext)
