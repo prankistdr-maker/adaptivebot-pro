@@ -1,6 +1,0 @@
-requests
-pandas
-numpy
-ta
-flask
-websocket-client
